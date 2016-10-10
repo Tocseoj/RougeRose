@@ -15,6 +15,8 @@ public class Player : MonoBehaviour {
 	int atkX = 0;
 	int atkY = 0;
 	int atkRange = 1;
+	int health = 100;
+	const int maxHealth = 100;
 
 	// Use this for initialization
 	void Start () {
@@ -30,8 +32,11 @@ public class Player : MonoBehaviour {
 		if (Input.anyKeyDown) {
 			int deltaX = 0, deltaY = 0;
 			GetAxis(ref deltaX, ref deltaY);
-			gc.updateLocation(ref playerX, ref playerY, deltaX, deltaY, transform);
+			bool step = gc.updateLocation(ref playerX, ref playerY, deltaX, deltaY, transform);
 			transform.position = new Vector3(playerX, playerY, 0);
+			if (step)
+				gc.step();
+			//Debug.Log("Turn: " + gc.getTurn());
 		}
 		//
 
@@ -43,10 +48,11 @@ public class Player : MonoBehaviour {
 			// TODO : dmg with SendMessage();
 			Transform target = gc.getLocation((int)transform.position.x + atkX, (int)transform.position.y + atkY);
 			if (target != null && target.tag != "Player") {
-				Debug.Log("hitAThing: " + target.name);	
-				target.SendMessage("AttackedByPlayer");
+				//Debug.Log("hitAThing: " + target.name);	
+				target.SendMessage("AttackedByPlayer", 20);
 			}
 
+			gc.step();
 			atkX = 0; atkY = 0;
 		}
 		if (Input.GetButton("Fire1")) {
@@ -55,7 +61,7 @@ public class Player : MonoBehaviour {
 			float atkAngle = Vector3.Angle(Vector3.right, mouseLocation.normalized);
 			if (mouseLocation.y < 0)
 				atkAngle = (-atkAngle) + 360;
-			AttackPosition(ref atkX, ref atkY, atkAngle, atkRange);
+			gc.AttackPosition(ref atkX, ref atkY, atkAngle, atkRange);
 			if (rangeIndicator == null) {
 				rangeIndicator = ((Transform)Instantiate(rangeIndicatorPrefab, transform)).GetComponent<SpriteRenderer>();
 			}
@@ -67,8 +73,21 @@ public class Player : MonoBehaviour {
 		//
 	}
 
+	public void AttackedByEnemy(int dmg) {
+		Debug.Log("Took " + dmg + " damage.");
+		health -= dmg;
+		if (health < 0) {
+			health = 0;
+			Debug.Log("Dead");
+			DestroySelf();
+		}
+	}
 
 	// Helper Functions
+	void DestroySelf() {
+		gc.addLocation(playerX, playerY, null);
+		Destroy(gameObject);
+	}
 
 	void GetAxis(ref int deltaX, ref int deltaY) {
 		if (Input.GetButtonDown("UpLeft")) {
@@ -87,64 +106,6 @@ public class Player : MonoBehaviour {
 			deltaX = 0; deltaY = -1;
 		} else if (Input.GetButtonDown("DownRight")) {
 			deltaX = 1; deltaY = -1;
-		}
-	}
-
-	void AttackPosition(ref int x, ref int y, float ang, int attackRange) {
-		if (attackRange <= 8)
-			attackRange %= 2;
-		if (attackRange == 1) {
-			if ((ang >= 0 && ang < 22.5f) || (ang >= 337.5f && ang < 360f)) {
-				x = 1;
-				y = 0;
-			} else if (ang >= 22.5f && ang < 67.5f) {
-				x = 1;
-				y = 1;
-			} else if (ang >= 67.5f && ang < 112.5f) {
-				x = 0;
-				y = 1;
-			} else if (ang >= 112.5f && ang < 157.5f) {
-				x = -1;
-				y = 1;
-			} else if (ang >= 157.5f && ang < 202.5f) {
-				x = -1;
-				y = 0;
-			} else if (ang >= 202.5f && ang < 247.5f) {
-				x = -1;
-				y = -1;
-			} else if (ang >= 247.5f && ang < 292.5f) {
-				x = 0;
-				y = -1;
-			} else if (ang >= 292.5f && ang < 337.5f) {
-				x = 1;
-				y = -1;
-			}
-		} else if (attackRange == 0) {
-			if (ang >= 0 && ang < 45) {
-				x = 1;
-				y = 0;
-			} else if (ang >= 45 && ang < 90) {
-				x = 1;
-				y = 1;
-			} else if (ang >= 90 && ang < 135) {
-				x = 0;
-				y = 1;
-			} else if (ang >= 135 && ang < 180) {
-				x = -1;
-				y = 1;
-			} else if (ang >= 180 && ang < 225) {
-				x = -1;
-				y = 0;
-			} else if (ang >= 225 && ang < 270) {
-				x = -1;
-				y = -1;
-			} else if (ang >= 270 && ang < 315) {
-				x = 0;
-				y = -1;
-			} else if (ang >= 315 && ang < 360) {
-				x = 1;
-				y = -1;
-			}
 		}
 	}
 }
